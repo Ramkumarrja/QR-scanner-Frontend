@@ -114,7 +114,7 @@ const ParentPage = () => {
               value={`https://qr-scanner-frontend.vercel.app/child-page?sessionId=${sessionId}`}
               size={250}
             />
-            <p>{`/child-page?sessionId=${sessionId}`}</p>
+            {/* <p>{`/child-page?sessionId=${sessionId}`}</p> */}
           </div>
         )}
       </Container>
