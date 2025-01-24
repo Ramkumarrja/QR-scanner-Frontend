@@ -22,7 +22,7 @@ const ParentPage = () => {
 
     // Create WebSocket connection
     ws.current = new WebSocket(
-      `ws://localhost:${import.meta.env.VITE_WS_PORT || 3001}`
+      "https://qr-scanner-backend-production-6b93.up.railway.app/"
     );
 
     // Handle WebSocket open event
