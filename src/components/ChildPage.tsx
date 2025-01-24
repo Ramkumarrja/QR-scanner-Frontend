@@ -1,73 +1,64 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { io, Socket } from "socket.io-client";
 
 const ChildPage = () => {
-  const ws = useRef<WebSocket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
   const [file, setFile] = useState<File | null>(null);
-
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get("sessionId") || "";
-  console.log("[ChildPage] SessionId:", sessionId);
 
-  // Initialize WebSocket connection
   useEffect(() => {
-    console.log("[ChildPage] Initializing WebSocket connection...");
+    // Initialize Socket.IO client
+    const newSocket = io(import.meta.env.VITE_WS_PORT);
+    // const newSocket=  io(`ws://localhost:${import.meta.env.VITE_WS_PORT || 3001}`);
+    
 
-    // Create WebSocket connection
-    ws.current = new WebSocket("https://qr-scanner-backend-production-6b93.up.railway.app/");
+    setSocket(newSocket);
 
-    // Handle WebSocket open event
-    ws.current.onopen = () => {
-      console.log("[ChildPage] WebSocket connection established.");
-    };
-
-    // Handle incoming messages from the server
-    ws.current.onmessage = (event) => {
-      console.log("[ChildPage] Received message from server:", event.data);
-    };
-
-    // Handle WebSocket close event
-    ws.current.onclose = () => {
-      console.log("[ChildPage] WebSocket connection closed.");
-    };
-
-    // Handle WebSocket errors
-    ws.current.onerror = (error) => {
-      console.error("[ChildPage] WebSocket error:", error);
-    };
-
-    // Cleanup WebSocket connection on component unmount
+    // Cleanup on unmount
     return () => {
-      console.log("[ChildPage] Cleaning up WebSocket connection...");
-      if (ws.current) {
-        ws.current.close();
-      }
+      newSocket.close();
     };
   }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
-      console.log("[ChildPage] Selected file:", selectedFile.name);
       setFile(selectedFile);
 
-      // Read the file as a base64 string
+      // Convert file to Base64 and send to server
       const reader = new FileReader();
       reader.onload = () => {
-        if (reader.result && ws.current?.readyState === WebSocket.OPEN) {
-          console.log("[ChildPage] Sending file data to server");
-          ws.current.send(
-            JSON.stringify({
-              type: "file_upload",
-              sessionId,
-              fileData: reader.result, // Send the file data as base64
-            })
-          );
+        if (reader.result && socket) {
+          socket.emit("file_upload", {
+            sessionId,
+            fileData: reader.result,
+          });
         }
       };
-      reader.readAsDataURL(selectedFile); // Read the file as a base64 string
+      reader.readAsDataURL(selectedFile);
     }
   };
+
+  useEffect(() => {
+    if (socket) {
+      // Listen for upload success
+      socket.on("file_upload_success", (data) => {
+        console.log("[ChildPage] File upload success:", data);
+      });
+
+      // Listen for upload errors
+      socket.on("upload_error", (error) => {
+        console.error("[ChildPage] Upload error:", error);
+      });
+
+      // Listen for OCR errors
+      socket.on("ocr_error", (error) => {
+        console.error("[ChildPage] OCR error:", error);
+      });
+    }
+  }, [socket]);
 
   return (
     <div style={styles.container}>
@@ -84,9 +75,7 @@ const ChildPage = () => {
           style={styles.input}
           onChange={handleFileChange}
         />
-        {file && (
-          <p style={styles.fileName}>Selected file: {file.name}</p>
-        )}
+        {file && <p style={styles.fileName}>Selected file: {file.name}</p>}
       </form>
     </div>
   );

@@ -1,106 +1,84 @@
 import { Box, Container } from "@mui/material";
 import { QRCodeSVG } from "qrcode.react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { io, Socket } from "socket.io-client";
 
 const ParentPage = () => {
-  const ws = useRef<WebSocket | null>(null);
+  const [_socket, setSocket] = useState<Socket | null>(null);
   const [sessionId, setSessionId] = useState<string>(""); // Default Session ID
-  const [imageData, setImageData] = useState<string | null>(null);
+  // const [imageData, setImageData] = useState<string | null>(null);
   const [_receivedMessage, setReceivedMessage] = useState<string>("");
-  const [_uploadedFileInfo, setUploadedFileInfo] = useState<{
+  const [_uploadedFileInfo, _setUploadedFileInfo] = useState<{
     filePath: string;
     sessionId: string;
   } | null>(null);
   const [name, setName] = useState<string | null>("");
-  const [fatherName, setfatherName] = useState<string | null>("");
+  const [fatherName, setFatherName] = useState<string | null>("");
   const [cardNumber, setCardNumber] = useState<string | null>("");
   const [address, setAddress] = useState<string | null>("");
 
-  // Initialize WebSocket connection
+  // Initialize Socket.IO connection
   useEffect(() => {
-    console.log("[ParentPage] Initializing WebSocket connection...");
+    console.log("[ParentPage] Initializing Socket.IO connection...");
+    const newSocket = io(import.meta.env.VITE_WS_PORT);
+    // const newSocket = io(`http://localhost:${import.meta.env.VITE_WS_PORT || 3001}`);
+    setSocket(newSocket);
 
-    // Create WebSocket connection
-    ws.current = new WebSocket(
-      "https://qr-scanner-backend-production-6b93.up.railway.app/"
-    );
+    // Handle session ID received from the server
+    newSocket.on("session_id", (data: { sessionId: string }) => {
+      setSessionId(data.sessionId);
+      localStorage.setItem("sessionId", data.sessionId); // Store session ID in localStorage
+      console.log(`[ParentPage] Received session ID: ${data.sessionId}`);
+    });
 
-    // Handle WebSocket open event
-    ws.current.onopen = () => {
-      console.log("[ParentPage] WebSocket connection established.");
-    };
-
-    // Handle incoming messages from the server
-    ws.current.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-
-      if (data.type === "session_id") {
-        // Set the session ID received from the server
-        setSessionId(data.sessionId);
-        localStorage.setItem("sessionId", data.sessionId); // Store session ID in localStorage
-        console.log(`[ParentPage] Received session ID: ${data.sessionId}`);
-      }
-
-      if (data.type === "file_upload_success") {
-        // Handle file upload success
+    // Handle file upload success
+    newSocket.on(
+      "file_upload_success",
+      (data: {
+        filePath: string;
+        guestInfo: {
+          Name: string;
+          FatherName: string;
+          CardNumber: string;
+          Address: string;
+        };
+        sessionId: string;
+      }) => {
         console.log(
           `[ParentPage] File uploaded by client ${data.sessionId}: ${data.filePath}`
         );
 
-        console.log("guestInformation ::", data.guestInfo)
-
-        // console.log("server sending the sessionid ::", data.sessionId)
-        // console.log("client sessionid ::", localStorage.getItem("sessionId"))
-        // console.log("after seting the session id ::", sessionId)
-        // console.log("client sessionid ::", sessionId===data.sessionId)
-
         // Check if the sessionId in the message matches the current sessionId
         if (data.sessionId === localStorage.getItem("sessionId")) {
-          console.log(
-            "[ParentPage] Session ID matches. Updating UI with file information."
-          );
-          setImageData(data.filePath); // Display the uploaded image
-          setUploadedFileInfo({
-            filePath: data.filePath,
-            sessionId: data.sessionId,
-          });
-          setName(data?.guestInfo?.Name)
-          setfatherName(data?.guestInfo?.FatherName)
-          setAddress(data?.guestInfo?.Address)
-          setCardNumber(data?.guestInfo?.CardNumber)
+          console.log("[ParentPage] Session ID matches. Updating UI with file information.");
+          // setImageData(data.filePath); // Display the uploaded image
+          // setUploadedFileInfo({
+          //   filePath: data.filePath,
+          //   sessionId: data.sessionId,
+          // });
+          console.log("data from the socket ::", data)
+          setName(data?.guestInfo?.Name);
+          setFatherName(data?.guestInfo?.FatherName);
+          setAddress(data?.guestInfo?.Address);
+          setCardNumber(data?.guestInfo?.CardNumber);
         } else {
-          console.log(
-            "[ParentPage] Session ID does not match. Ignoring message."
-          );
+          console.log("[ParentPage] Session ID does not match. Ignoring message.");
         }
       }
+    );
 
-      if (data.type === "message") {
-        // Handle received message
-        console.log(`[ParentPage] Received message: ${data.message}`);
-        setReceivedMessage(data.message);
-      }
-    };
+    // Handle generic messages
+    newSocket.on("message", (message: string) => {
+      console.log(`[ParentPage] Received message: ${message}`);
+      setReceivedMessage(message);
+    });
 
-    // Handle WebSocket close event
-    ws.current.onclose = () => {
-      console.log("[ParentPage] WebSocket connection closed.");
-    };
-
-    // Handle WebSocket errors
-    ws.current.onerror = (error) => {
-      console.error("[ParentPage] WebSocket error:", error);
-    };
-
-    // Cleanup WebSocket connection on component unmount
+    // Cleanup Socket.IO connection on component unmount
     return () => {
-      console.log("[ParentPage] Cleaning up WebSocket connection...");
-      if (ws.current) {
-        ws.current.close();
-      }
+      console.log("[ParentPage] Cleaning up Socket.IO connection...");
+      newSocket.disconnect();
     };
   }, []);
-
 
   return (
     <Box>
@@ -112,14 +90,20 @@ const ParentPage = () => {
           alignContent: "center",
         }}
       >
+        {sessionId && (
+          <Box sx={{ marginBottom: 2, textAlign: "center" }}>
+            <strong>Session ID:</strong> <span>{sessionId}</span>
+          </Box>
+        )}
+
         {name ? (
           // Render this when guestInfo is truthy
           <div>
-            <Box sx={{display: "flex", flexDirection: "column", gap: 5}}>
-            <p>NAME::{name}</p>
-            <p>FATHERNAME::{fatherName}</p>
-            <p>ADDRESS ::{address}</p>
-            <p>CARDNUMBER ::{cardNumber}</p>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              <p>NAME::{name}</p>
+              <p>FATHERNAME::{fatherName}</p>
+              <p>ADDRESS ::{address}</p>
+              <p>CARDNUMBER ::{cardNumber}</p>
             </Box>
           </div>
         ) : (
@@ -130,17 +114,7 @@ const ParentPage = () => {
               value={`https://qr-scanner-frontend.vercel.app/child-page?sessionId=${sessionId}`}
               size={250}
             />
-            {/* <p>{`/child-page?sessionId=${sessionId}`}</p> */}
-            {imageData && (
-              <Box>
-                <strong>Uploaded Image:</strong>
-                <img
-                  src={imageData}
-                  alt="Uploaded"
-                  style={{ maxWidth: "100%", height: "auto" }}
-                />
-              </Box>
-            )}
+            <p>{`/child-page?sessionId=${sessionId}`}</p>
           </div>
         )}
       </Container>
