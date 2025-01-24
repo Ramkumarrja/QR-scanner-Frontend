@@ -69,11 +69,10 @@ const ChildPage = () => {
     }
   };
 
-
   return (
     <div style={styles.container}>
       <h2>Upload Your Document</h2>
-      <form style={styles.form} >
+      <form style={styles.form}>
         <label htmlFor="document" style={styles.label}>
           Select or Take a Photo:
         </label>
@@ -82,14 +81,12 @@ const ChildPage = () => {
           id="document"
           name="document"
           accept="image/*"
-          capture="environment"
           style={styles.input}
           onChange={handleFileChange}
         />
-        {file && <p style={styles.fileName}>Selected file: {file.name}</p>}
-        {/* <button type="submit" style={styles.button}>
-          Submit
-        </button> */}
+        {file && (
+          <p style={styles.fileName}>Selected file: {file.name}</p>
+        )}
       </form>
     </div>
   );
@@ -128,42 +125,10 @@ const styles = {
     border: "1px solid #ccc",
     width: "100%",
   },
-  button: {
-    padding: "10px 20px",
-    fontSize: "16px",
-    fontWeight: "bold" as const,
-    color: "#fff",
-    backgroundColor: "#007bff",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-  },
   fileName: {
     fontSize: "14px",
     color: "#555",
   },
-  resultContainer: {
-    marginTop: "20px",
-    padding: "15px",
-    borderRadius: "8px",
-    backgroundColor: "#f1f1f1",
-    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-    width: "90%",
-    maxWidth: "400px",
-  },
-  resultList: {
-    listStyleType: "none",
-    padding: "0",
-  },
-  resultItem: {
-    fontSize: "16px",
-    color: "#333",
-    marginBottom: "8px",
-  },
 };
 
-
-
 export default ChildPage;
-
-
