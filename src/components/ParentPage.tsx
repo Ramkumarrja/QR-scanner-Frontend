@@ -127,10 +127,10 @@ const ParentPage = () => {
           <div>
             <h1>QR Scanner</h1>
             <QRCodeSVG
-              value={`/child-page?sessionId=${sessionId}`}
+              value={`https://qr-scanner-frontend.vercel.app/child-page?sessionId=${sessionId}`}
               size={250}
             />
-            <p>{`/child-page?sessionId=${sessionId}`}</p>
+            {/* <p>{`/child-page?sessionId=${sessionId}`}</p> */}
             {imageData && (
               <Box>
                 <strong>Uploaded Image:</strong>
