@@ -6,7 +6,8 @@ const ChildPage = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [searchParams] = useSearchParams();
-  const sessionId = searchParams.get("sessionId") || "";
+  const clientId = searchParams.get("clientId") || "";
+  // const clientId = localStorage.getItem("clientId") || "";
 
   useEffect(() => {
     // Initialize Socket.IO client
@@ -23,6 +24,7 @@ const ChildPage = () => {
   }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("ClientId ::", clientId)
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
@@ -32,7 +34,7 @@ const ChildPage = () => {
       reader.onload = () => {
         if (reader.result && socket) {
           socket.emit("file_upload", {
-            sessionId,
+            clientId,
             fileData: reader.result,
           });
         }

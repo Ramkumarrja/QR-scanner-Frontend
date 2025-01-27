@@ -6,16 +6,13 @@ import { io, Socket } from "socket.io-client";
 const ParentPage = () => {
   const [_socket, setSocket] = useState<Socket | null>(null);
   const [sessionId, setSessionId] = useState<string>(""); // Default Session ID
-  // const [imageData, setImageData] = useState<string | null>(null);
-  const [_receivedMessage, setReceivedMessage] = useState<string>("");
-  const [_uploadedFileInfo, _setUploadedFileInfo] = useState<{
-    filePath: string;
-    sessionId: string;
+  const clientId = localStorage.getItem("clientId") || ""; // Retrieve clientId
+  const [guestInfo, setGuestInfo] = useState<{
+    Name: string;
+    FatherName: string;
+    CardNumber: string;
+    Address: string;
   } | null>(null);
-  const [name, setName] = useState<string | null>("");
-  const [fatherName, setFatherName] = useState<string | null>("");
-  const [cardNumber, setCardNumber] = useState<string | null>("");
-  const [address, setAddress] = useState<string | null>("");
 
   // Initialize Socket.IO connection
   useEffect(() => {
@@ -44,41 +41,23 @@ const ParentPage = () => {
         };
         sessionId: string;
       }) => {
-        console.log(
-          `[ParentPage] File uploaded by client ${data.sessionId}: ${data.filePath}`
-        );
+        console.log(`[ParentPage] File uploaded for session ${data.sessionId}:`, data);
 
-        // Check if the sessionId in the message matches the current sessionId
-        if (data.sessionId === localStorage.getItem("sessionId")) {
-          console.log("[ParentPage] Session ID matches. Updating UI with file information.");
-          // setImageData(data.filePath); // Display the uploaded image
-          // setUploadedFileInfo({
-          //   filePath: data.filePath,
-          //   sessionId: data.sessionId,
-          // });
-          console.log("data from the socket ::", data)
-          setName(data?.guestInfo?.Name);
-          setFatherName(data?.guestInfo?.FatherName);
-          setAddress(data?.guestInfo?.Address);
-          setCardNumber(data?.guestInfo?.CardNumber);
+        // Update UI with the received guest info
+        if (data.sessionId === sessionId) {
+          setGuestInfo(data.guestInfo);
         } else {
-          console.log("[ParentPage] Session ID does not match. Ignoring message.");
+          console.log("[ParentPage] Session ID mismatch. Ignoring file upload data.");
         }
       }
     );
-
-    // Handle generic messages
-    newSocket.on("message", (message: string) => {
-      console.log(`[ParentPage] Received message: ${message}`);
-      setReceivedMessage(message);
-    });
 
     // Cleanup Socket.IO connection on component unmount
     return () => {
       console.log("[ParentPage] Cleaning up Socket.IO connection...");
       newSocket.disconnect();
     };
-  }, []);
+  }, [sessionId]);
 
   return (
     <Box>
@@ -88,34 +67,43 @@ const ParentPage = () => {
           flexDirection: "column",
           alignItems: "center",
           alignContent: "center",
+          mt: 4,
         }}
       >
-        {sessionId && (
+        {clientId && (
           <Box sx={{ marginBottom: 2, textAlign: "center" }}>
-            <strong>Session ID:</strong> <span>{sessionId}</span>
+            <strong>Client ID:</strong> <span>{clientId}</span>
           </Box>
         )}
 
-        {name ? (
-          // Render this when guestInfo is truthy
-          <div>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 5 }}>
-              <p>NAME::{name}</p>
-              <p>FATHERNAME::{fatherName}</p>
-              <p>ADDRESS ::{address}</p>
-              <p>CARDNUMBER ::{cardNumber}</p>
-            </Box>
-          </div>
+        {guestInfo ? (
+          // Render guest information
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, textAlign: "left" }}>
+            <p>
+              <strong>Name:</strong> {guestInfo.Name}
+            </p>
+            <p>
+              <strong>Father's Name:</strong> {guestInfo.FatherName}
+            </p>
+            <p>
+              <strong>Address:</strong> {guestInfo.Address}
+            </p>
+            <p>
+              <strong>Card Number:</strong> {guestInfo.CardNumber}
+            </p>
+          </Box>
         ) : (
-          // Render this when guestInfo is falsy
-          <div>
+          // Render QR code if no guest info is available
+          <Box sx={{ textAlign: "center" }}>
             <h1>QR Scanner</h1>
-            <QRCodeSVG
-              value={`https://qr-scanner-frontend.vercel.app/child-page?sessionId=${sessionId}`}
-              size={250}
-            />
-            {/* <p>{`/child-page?sessionId=${sessionId}`}</p> */}
-          </div>
+            {clientId && (
+              <QRCodeSVG
+                value={`https://qr-scanner-frontend.vercel.app/child-page?clientId=${clientId}`}
+                size={250}
+              />
+            )}
+            <p>{`/child-page?clientId=${clientId}`}</p>
+          </Box>
         )}
       </Container>
     </Box>
