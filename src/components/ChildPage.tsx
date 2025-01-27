@@ -11,8 +11,8 @@ const ChildPage = () => {
 
   useEffect(() => {
     // Initialize Socket.IO client
-    // const newSocket = io(import.meta.env.VITE_WS_PORT);
-    const newSocket=  io(`ws://localhost:${import.meta.env.VITE_WS_PORT || 3001}`);
+    const newSocket = io(import.meta.env.VITE_WS_PORT);
+    // const newSocket=  io(`ws://localhost:${import.meta.env.VITE_WS_PORT || 3001}`);
     
 
     setSocket(newSocket);

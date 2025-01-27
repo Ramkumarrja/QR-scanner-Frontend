@@ -22,8 +22,10 @@ const ParentPage = () => {
     console.log("[ParentPage] Initializing Socket.IO connection...");
     
     // Use a fallback port if `VITE_WS_PORT` is not set
-    const socketPort = import.meta.env.VITE_WS_PORT || 3001;
-    const newSocket = io(`http://localhost:${socketPort}`);
+    const newSocket = io(import.meta.env.VITE_WS_PORT);
+
+    // const socketPort = import.meta.env.VITE_WS_PORT || 3001;
+    // const newSocket = io(`http://localhost:${socketPort}`);
     
     setSocket(newSocket);
 

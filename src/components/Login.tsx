@@ -18,10 +18,10 @@ const Login = () => {
 
   useEffect(() => {
     console.log("[Login Page] Initializing Socket.IO connection...");
-    // const newSocket = io(import.meta.env.VITE_WS_PORT);
-    const newSocket = io(
-      `http://localhost:${import.meta.env.VITE_WS_PORT || 3001}`
-    );
+    const newSocket = io(import.meta.env.VITE_WS_PORT);
+    // const newSocket = io(
+    //   `http://localhost:${import.meta.env.VITE_WS_PORT || 3001}`
+    // );
 
     newSocket.on("connect", () => {
       console.log("sessionId ::", newSocket.id);
