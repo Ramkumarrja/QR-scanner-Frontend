@@ -7,19 +7,26 @@ const ChildPage = () => {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
+  const [sessionId, setSessionId] = useState<string>("");
   const clientId = searchParams.get("clientId") || "";
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const newSocket = io(import.meta.env.VITE_WS_PORT)
+    const newSocket = io(import.meta.env.VITE_WS_PORT);
     // const newSocket = io(
     //   `ws://localhost:${import.meta.env.VITE_WS_PORT || 3001}`
     // );
+    const handleConnect = () => {
+      console.log("sessionId ::", newSocket.id);
+      setSessionId(newSocket.id ?? "");
+    };
+    newSocket.on("connect", handleConnect);
+
     setSocket(newSocket);
     return () => {
       newSocket.close();
-    }
+    };
   }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -46,6 +53,7 @@ const ChildPage = () => {
 
   return (
     <div style={styles.container}>
+      <h2>sessionId: {sessionId}</h2>
       <h2>Upload Your Document</h2>
       <form style={styles.form} onSubmit={handleSubmit}>
         <div style={styles.buttonGroup}>
