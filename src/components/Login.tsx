@@ -9,7 +9,12 @@ const Login = () => {
   const theme = useTheme();
   const [_socket, setSocket] = useState<Socket | null>(null);
   const [_sessionId, setSessionId] = useState<string>("");
-  const clientId = localStorage.getItem("clientId") || uuidv4();
+  let clientId = localStorage.getItem("clientId") || (() => {
+    const newClientId = uuidv4();
+    localStorage.setItem("clientId", newClientId);
+    return newClientId;
+  })();
+  
   const [guestInfo, setGuestInfo] = useState<{
     Name: string;
     FatherName: string;
