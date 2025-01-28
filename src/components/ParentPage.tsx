@@ -1,12 +1,14 @@
-import { Box, Container } from "@mui/material";
+import { Box, Container, Typography, Card, List, ListItem, ListItemText, useTheme } from "@mui/material";
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useState, useRef } from "react";
 import { io, Socket } from "socket.io-client";
+import { Person, PersonOutline, Home, CreditCard } from "@mui/icons-material";
 
 const ParentPage = () => {
+  const theme = useTheme();
   const [_socket, setSocket] = useState<Socket | null>(null);
-  const [sessionId, setSessionId] = useState<string>(""); // Default Session ID
-  const clientId = localStorage.getItem("clientId") || ""; // Retrieve clientId
+  const [sessionId, setSessionId] = useState<string>("");
+  const clientId = localStorage.getItem("clientId") || "";
   const [guestInfo, setGuestInfo] = useState<{
     Name: string;
     FatherName: string;
@@ -14,119 +16,178 @@ const ParentPage = () => {
     Address: string;
   } | null>(null);
   
-  // Track if register event has been emitted
   const isRegistered = useRef(false);
 
-  // Initialize Socket.IO connection
   useEffect(() => {
-    console.log("[ParentPage] Initializing Socket.IO connection...");
-    
-    // Use a fallback port if `VITE_WS_PORT` is not set
-    const newSocket = io(import.meta.env.VITE_WS_PORT);
-
+    const newSocket = io(import.meta.env.VITE_WS_PORT)
     // const socketPort = import.meta.env.VITE_WS_PORT || 3001;
     // const newSocket = io(`http://localhost:${socketPort}`);
     
     setSocket(newSocket);
 
-    newSocket.on("connect", () => {
+    const handleConnect = () => {
       console.log("sessionId ::", newSocket.id);
       setSessionId(newSocket.id ?? "");
-
-      // Emit register event only once, when the socket first connects
       if (!isRegistered.current) {
         newSocket.emit("register", { clientId });
-        isRegistered.current = true; // Mark as registered
+        isRegistered.current = true;
       }
-    });
+    };
 
-    // Handle session ID received from the server
-    newSocket.on("session_id", (data: { sessionId: string }) => {
+    const handleSessionId = (data: { sessionId: string }) => {
       setSessionId(data.sessionId);
-      localStorage.setItem("sessionId", data.sessionId); // Store session ID in localStorage
-      console.log(`[ParentPage] Received session ID: ${data.sessionId}`);
-    });
+      localStorage.setItem("sessionId", data.sessionId);
+    };
 
-    // Handle file upload success
-    newSocket.on(
-      "file_upload_success",
-      (data: {
-        filePath: string;
-        guestInfo: {
-          Name: string;
-          FatherName: string;
-          CardNumber: string;
-          Address: string;
-        };
-        sessionId: string;
-      }) => {
-        console.log(`[ParentPage] File uploaded for session ${data.sessionId}:`, data);
-
-        // Update UI with the received guest info
-        if (data.sessionId === sessionId) {
-          setGuestInfo(data.guestInfo);
-        } else {
-          console.log("[ParentPage] Session ID mismatch. Ignoring file upload data.");
-        }
+    const handleFileUpload = (data: {
+      filePath: string;
+      guestInfo: any;
+      sessionId: string;
+    }) => {
+      if (data.sessionId === sessionId) {
+        setGuestInfo(data.guestInfo);
       }
-    );
+    };
 
-    // Cleanup Socket.IO connection on component unmount
+    newSocket.on("connect", handleConnect);
+    newSocket.on("session_id", handleSessionId);
+    newSocket.on("file_upload_success", handleFileUpload);
+
     return () => {
-      console.log("[ParentPage] Cleaning up Socket.IO connection...");
+      newSocket.off("connect", handleConnect);
+      newSocket.off("session_id", handleSessionId);
+      newSocket.off("file_upload_success", handleFileUpload);
       newSocket.disconnect();
     };
-  }, [sessionId, clientId]); // Added clientId to dependencies list
+  }, [clientId]); // Removed sessionId from dependencies
 
   return (
-    <Box>
-      <Container
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          alignContent: "center",
-          mt: 4,
-        }}
-      >
-        {clientId && (
-          <Box sx={{ marginBottom: 2, textAlign: "center" }}>
-            <strong>Client ID:</strong> <span>{clientId}</span>
-          </Box>
-        )}
+    <Box sx={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+      py: 8
+    }}>
+      <Container maxWidth="md">
+        <Card sx={{
+          p: 4,
+          borderRadius: 4,
+          boxShadow: theme.shadows[4],
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(10px)'
+        }}>
+          {clientId && (
+            <Typography variant="subtitle1" sx={{ 
+              mb: 4,
+              textAlign: 'center',
+              color: 'text.secondary',
+              fontWeight: 500
+            }}>
+              Client ID: <span style={{ color: theme.palette.primary.main }}>{clientId}</span>
+            </Typography>
+          )}
 
-        {guestInfo ? (
-          // Render guest information
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, textAlign: "left" }}>
-            <p>
-              <strong>Name:</strong> {guestInfo.Name}
-            </p>
-            <p>
-              <strong>Father's Name:</strong> {guestInfo.FatherName}
-            </p>
-            <p>
-              <strong>Address:</strong> {guestInfo.Address}
-            </p>
-            <p>
-              <strong>Card Number:</strong> {guestInfo.CardNumber}
-            </p>
-          </Box>
-        ) : (
-          // Render QR code if no guest info is available
-          <Box sx={{ textAlign: "center" }}>
-            <h1>QR Scanner</h1>
-            {clientId && (
-              <QRCodeSVG
-                value={`https://qr-scanner-frontend.vercel.app/child-page?clientId=${clientId}`}
-                size={250}
-              />
-            )}
-            <p>{`/child-page?clientId=${clientId}`}</p>
-          </Box>
-        )}
+          {guestInfo ? (
+            <Box sx={{ 
+              p: 3,
+              background: theme.palette.background.paper,
+              borderRadius: 2
+            }}>
+              <Typography variant="h5" sx={{ 
+                mb: 3,
+                color: theme.palette.primary.main,
+                fontWeight: 600
+              }}>
+                Guest Information
+              </Typography>
+              
+              <List>
+                <InfoItem 
+                  icon={<Person />} 
+                  primary="Name" 
+                  secondary={guestInfo.Name} 
+                />
+                <InfoItem 
+                  icon={<PersonOutline />} 
+                  primary="Father's Name" 
+                  secondary={guestInfo.FatherName} 
+                />
+                <InfoItem 
+                  icon={<Home />} 
+                  primary="Address" 
+                  secondary={guestInfo.Address} 
+                />
+                <InfoItem 
+                  icon={<CreditCard />} 
+                  primary="Card Number" 
+                  secondary={guestInfo.CardNumber} 
+                />
+              </List>
+            </Box>
+          ) : (
+            <Box sx={{ 
+              textAlign: 'center',
+              px: 2
+            }}>
+              <Typography variant="h3" sx={{ 
+                mb: 3,
+                color: theme.palette.primary.dark,
+                fontWeight: 700
+              }}>
+                Visitor Registration Portal
+              </Typography>
+              
+              {clientId && (
+                <>
+                  <Card sx={{
+                    p: 3,
+                    mb: 3,
+                    display: 'inline-block',
+                    background: theme.palette.background.default,
+                    borderRadius: 3
+                  }}>
+                    <QRCodeSVG
+                      value={`https://qr-scanner-frontend.vercel.app/child-page?clientId=${clientId}`}
+                      size={250}
+                    />
+                  </Card>
+                  <Typography variant="body1" sx={{ 
+                    color: 'text.secondary',
+                    maxWidth: 400,
+                    mx: 'auto',
+                    lineHeight: 1.6
+                  }}>
+                    Scan this QR code with your mobile device to 
+                    register visitor information
+                  </Typography>
+                </>
+              )}
+            </Box>
+          )}
+        </Card>
       </Container>
     </Box>
   );
 };
+
+const InfoItem = ({ icon, primary, secondary }: { 
+  icon: React.ReactNode;
+  primary: string;
+  secondary: string;
+}) => (
+  <ListItem sx={{ px: 0 }}>
+    <Box sx={{ 
+      minWidth: 40,
+      color: 'primary.main',
+      display: 'flex',
+      justifyContent: 'center'
+    }}>
+      {icon}
+    </Box>
+    <ListItemText
+      primary={<Typography variant="subtitle1">{primary}</Typography>}
+      secondary={<Typography variant="body1" sx={{ color: 'text.primary' }}>{secondary}</Typography>}
+    />
+  </ListItem>
+);
 
 export default ParentPage;
