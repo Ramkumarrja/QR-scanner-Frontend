@@ -3,12 +3,13 @@ import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useState, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { Person, PersonOutline, Home, CreditCard } from "@mui/icons-material";
+import { v4 as uuidv4 } from "uuid";
 
 const Login = () => {
   const theme = useTheme();
   const [_socket, setSocket] = useState<Socket | null>(null);
   const [_sessionId, setSessionId] = useState<string>("");
-  const clientId = localStorage.getItem("clientId") || "";
+  const clientId = localStorage.getItem("clientId") || uuidv4();
   const [guestInfo, setGuestInfo] = useState<{
     Name: string;
     FatherName: string;
