@@ -2,7 +2,7 @@ import { Box, Container, Typography, Card, List, ListItem, ListItemText, useThem
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useState, useRef } from "react";
 import { io, Socket } from "socket.io-client";
-import { Person, PersonOutline, Home, CreditCard } from "@mui/icons-material";
+import { Person, PersonOutline, Home, CreditCard, Today, CalendarMonth, Male, Female } from "@mui/icons-material";
 import { v4 as uuidv4 } from "uuid";
 
 const Login = () => {
@@ -20,15 +20,18 @@ const Login = () => {
     FatherName: string;
     CardNumber: string;
     Address: string;
+    Age: string;
+    DateofBirth: string;
+    Gender: string;
   } | null>(null);
   
   const isRegistered = useRef(false);
 
   useEffect(() => {
-    const newSocket = io(import.meta.env.VITE_WS_PORT)
+    // const newSocket = io(import.meta.env.VITE_WS_PORT)
 
-    // const socketPort = import.meta.env.VITE_WS_PORT || 3001;
-    // const newSocket = io(`http://localhost:${socketPort}`);
+    const socketPort = import.meta.env.VITE_WS_PORT || 3001;
+    const newSocket = io(`http://localhost:${socketPort}`);
     
     setSocket(newSocket);
 
@@ -111,6 +114,21 @@ const Login = () => {
                   icon={<Person />} 
                   primary="Name" 
                   secondary={guestInfo.Name} 
+                />
+                <InfoItem 
+                  icon={guestInfo.Gender === "Male" ? <Male /> : <Female />} 
+                  primary="Gender" 
+                  secondary={guestInfo.Gender} 
+                />
+                <InfoItem 
+                  icon={<CalendarMonth />} 
+                  primary="Age"
+                  secondary={guestInfo.Age} 
+                />
+                <InfoItem 
+                  icon={<Today />} 
+                  primary="DateofBirth" 
+                  secondary={guestInfo.DateofBirth} 
                 />
                 <InfoItem 
                   icon={<PersonOutline />} 
